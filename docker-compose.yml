@@ -1,0 +1,85 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres-1
+    restart: always
+    environment:
+      POSTGRES_DB: chatty_db
+      POSTGRES_USER: chatty
+      POSTGRES_PASSWORD: ChattyApp
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - chatty-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U chatty -d chatty_db" ]
+      interval: 10s
+      retries: 5
+      start_period: 20s
+
+  # Eureka Discovery Service
+  discovery_service:
+    build:
+      context: .
+      dockerfile: ./discovery_service/Dockerfile
+    container_name: discovery_service
+    restart: always
+    ports:
+      - "8761:8761"
+    networks:
+      - chatty-network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8761/" ]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+
+  # Authentication Service
+  auth_service:
+    build:
+      context: ./auth_service
+      dockerfile: Dockerfile
+    container_name: auth_service
+    restart: always
+    depends_on:
+      - discovery_service
+      - postgres
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/chatty_db
+      SPRING_DATASOURCE_USERNAME: chatty
+      SPRING_DATASOURCE_PASSWORD: ChattyApp
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery_service:8761/eureka/
+    ports:
+      - "8081:8081"
+    networks:
+      - chatty-network
+
+  # API Gateway
+  api_gateway:
+    build:
+      context: ./api_gateway
+      dockerfile: Dockerfile
+    container_name: api_gateway
+    restart: always
+    depends_on:
+      - discovery_service
+      - auth_service
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery_service:8761/eureka/
+    ports:
+      - "8080:8080"
+    networks:
+      - chatty-network
+
+# Define Persistent Volume for PostgreSQL
+volumes:
+  postgres_data:
+
+# Define Network
+networks:
+  chatty-network:
+    driver: bridge

@@ -1,0 +1,21 @@
+server:
+  port: 8081
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/chatty_db
+    username: chatty
+    password: ChattyApp
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    database-platform: org.hibernate.dialect.PostgreSQLDialect

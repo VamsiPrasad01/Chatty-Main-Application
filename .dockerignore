@@ -1,0 +1,13 @@
+# Ignore IntelliJ-specific files
+.idea/
+*.iml
+
+# Ignore Git repository files
+.git/
+.gitignore
+
+# Ignore Maven target directory (compiled JARs)
+target/
+
+# Ignore log files
+*.log
